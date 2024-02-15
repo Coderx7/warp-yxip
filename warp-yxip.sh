@@ -2125,62 +2125,62 @@ warp_account() {
 }
 
 before_showinfo() {
-    yellow "请等待，正在检测 VPS、WARP 以及解锁状态..."
+     yellow "Please wait, VPS, WARP and unlocking status are being detected..."
 
-    # 获取出站 IPv4 / IPv6 的地址、提供商
-    check_ip
-    country4=$(curl -s4m8 ip.p3terx.com | sed -n 2p | awk -F "/ " '{print $2}')
-    country6=$(curl -s6m8 ip.p3terx.com | sed -n 2p | awk -F "/ " '{print $2}')
-    provider4=$(curl -s4m8 ip.p3terx.com | sed -n 3p | awk -F "/ " '{print $2}')
-    provider6=$(curl -s6m8 ip.p3terx.com | sed -n 3p | awk -F "/ " '{print $2}')
+     # Get outbound IPv4/IPv6 address, provider
+     check_ip
+     country4=$(curl -s4m8 ip.p3terx.com | sed -n 2p | awk -F "/ " '{print $2}')
+     country6=$(curl -s6m8 ip.p3terx.com | sed -n 2p | awk -F "/ " '{print $2}')
+     provider4=$(curl -s4m8 ip.p3terx.com | sed -n 3p | awk -F "/ " '{print $2}')
+     provider6=$(curl -s6m8 ip.p3terx.com | sed -n 3p | awk -F "/ " '{print $2}')
 
-    # 获取出站 WARP 账户状态
-    check_warp
+     # Get outbound WARP account status
+     check_warp
 
-    # 初始化 IPv4 / IPv6 设备名称，默认为未设置
-    device4="${RED}未设置${PLAIN}"
-    device6="${RED}未设置${PLAIN}"
+     # Initialize IPv4/IPv6 device name, default is not set
+     device4="${RED} is not set ${PLAIN}"
+     device6="${RED} is not set ${PLAIN}"
 
-    # 获取 WARP-Cli 和 WireProxy 的 socks5 端口
-    cli_port=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
-    wireproxy_port=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
+     # Get the socks5 port of WARP-Cli and WireProxy
+     cli_port=$(warp-cli --accept-tos settings 2>/dev/null | grep 'WarpProxy on port' | awk -F "port " '{print $2}')
+     wireproxy_port=$(grep BindAddress /etc/wireguard/proxy.conf 2>/dev/null | sed "s/BindAddress = 127.0.0.1://g")
 
-    # 如获取到 WARP-Cli 和 WireProxy 的 socks5 端口，则获取其的 IP 的地址、提供商、WARP状态信息
-    if [[ -n $cli_port ]]; then
-        account_cli=$(curl -sx socks5h://localhost:$cli_port https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-        country_cli=$(curl -sx socks5h://localhost:$cli_port ip.p3terx.com -k --connect-timeout 8 | sed -n 2p | awk -F "/ " '{print $2}')
-        ip_cli=$(curl -sx socks5h://localhost:$cli_port ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
-        provider_cli=$(curl -sx socks5h://localhost:$cli_port ip.p3terx.com -k --connect-timeout 8 | sed -n 3p | awk -F "/ " '{print $2}')
-    fi
-    if [[ -n $wireproxy_port ]]; then
-        account_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
-        country_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port ip.p3terx.com -k --connect-timeout 8 | sed -n 2p | awk -F "/ " '{print $2}')
-        ip_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
-        provider_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port ip.p3terx.com -k --connect-timeout 8 | sed -n 3p | awk -F "/ " '{print $2}')
-    fi
+     # If the socks5 port of WARP-Cli and WireProxy is obtained, obtain its IP address, provider, and WARP status information
+     if [[ -n $cli_port ]]; then
+         account_cli=$(curl -sx socks5h://localhost:$cli_port https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+         country_cli=$(curl -sx socks5h://localhost:$cli_port ip.p3terx.com -k --connect-timeout 8 | sed -n 2p | awk -F "/ " '{print $2}')
+         ip_cli=$(curl -sx socks5h://localhost:$cli_port ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
+         provider_cli=$(curl -sx socks5h://localhost:$cli_port ip.p3terx.com -k --connect-timeout 8 | sed -n 3p | awk -F "/ " '{print $2}')
+     fi
+     if [[ -n $wireproxy_port ]]; then
+         account_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port https://www.cloudflare.com/cdn-cgi/trace -k --connect-timeout 8 | grep warp | cut -d= -f2)
+         country_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port ip.p3terx.com -k --connect-timeout 8 | sed -n 2p | awk -F "/ " '{print $2}')
+         ip_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port ip.p3terx.com -k --connect-timeout 8 | sed -n 1p)
+         provider_wireproxy=$(curl -sx socks5h://localhost:$wireproxy_port ip.p3terx.com -k --connect-timeout 8 | sed -n 3p | awk -F "/ " '{print $2}')
+     fi
 
-    # 获取 WARP 账户状态、设备名称和剩余流量，并返回至用户回显
-    if [[ $warp_v4 == "plus" ]]; then
-        if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
-            d4=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
-            check_quota
-            quota4="${GREEN} $QUOTA ${PLAIN}"
-            account4="${GREEN}WARP+${PLAIN}"
-        elif [[ $(grep -s "Type" /opt/warp-go/warp.conf | cut -d= -f2 | sed "s# ##g") == "plus" ]]; then
-            check_quota
-            quota4="${GREEN} $QUOTA ${PLAIN}"
-            account4="${GREEN}WARP+${PLAIN}"
-        else
-            quota4="${RED}无限制${PLAIN}"
-            account4="${GREEN}WARP Teams${PLAIN}"
-        fi
-    elif [[ $warp_v4 == "on" ]]; then
-        quota4="${RED}无限制${PLAIN}"
-        account4="${YELLOW}WARP 免费账户${PLAIN}"
-    else
-        quota4="${RED}无限制${PLAIN}"
-        account4="${RED}未启用WARP${PLAIN}"
-    fi
+     # Get the WARP account status, device name and remaining traffic, and return to the user echo
+     if [[ $warp_v4 == "plus" ]]; then
+         if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
+             d4=$(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }')
+             check_quota
+             quota4="${GREEN} $QUOTA ${PLAIN}"
+             account4="${GREEN}WARP+${PLAIN}"
+         elif [[ $(grep -s "Type" /opt/warp-go/warp.conf | cut -d= -f2 | sed "s# ##g") == "plus" ]]; then
+             check_quota
+             quota4="${GREEN} $QUOTA ${PLAIN}"
+             account4="${GREEN}WARP+${PLAIN}"
+         else
+             quota4="${RED}Unlimited${PLAIN}"
+             account4="${GREEN}WARP Teams${PLAIN}"
+         fi
+     elif [[ $warp_v4 == "on" ]]; then
+         quota4="${RED}Unlimited${PLAIN}"
+         account4="${YELLOW}WARP Free Account${PLAIN}"
+     else
+         quota4="${RED}Unlimited${PLAIN}"
+         account4="${RED} is not enabled for WARP${PLAIN}"
+     fi
 
     if [[ $warp_v6 == "plus" ]]; then
         if [[ -n $(grep -s 'Device name' /etc/wireguard/info.log | awk '{ print $NF }') ]]; then
@@ -2240,125 +2240,124 @@ before_showinfo() {
         wget https://gitlab.com/Misaka-blog/warp-script/-/raw/main/files/netflix-verify/nf-linux-$(archAffix) -O /usr/local/bin/nf >/dev/null 2>&1
         chmod +x /usr/local/bin/nf
     fi
+# Test Netflix unblocking
+     netflix4=$(nf | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m |K]//g")
+     netflix6=$(nf | sed -n 7p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m |K]//g") && [[ -n $(echo $netflix6 | grep "IP region information recognized by NF") ]] && netflix6=$(nf | sed -n 6p | sed -r "s/ \x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+     [[ -n $cli_port ]] && netflix_cli=$(nf -proxy socks5://127.0.0.1:$cli_port | sed -n 3p | sed -r "s/\x1B\[([0-9]{1 ,2}(;[0-9]{1,2})?)?[m|K]//g")
+     [[ -n $wireproxy_port ]] && netflix_wireproxy=$(nf -proxy socks5://127.0.0.1:$wireproxy_port | sed -n 3p | sed -r "s/\x1B\[([0-9]{1 ,2}(;[0-9]{1,2})?)?[m|K]//g")
 
-    # 测试 Netflix 解锁情况
-    netflix4=$(nf | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
-    netflix6=$(nf | sed -n 7p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g") && [[ -n $(echo $netflix6 | grep "NF所识别的IP地域信息") ]] && netflix6=$(nf | sed -n 6p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
-    [[ -n $cli_port ]] && netflix_cli=$(nf -proxy socks5://127.0.0.1:$cli_port | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
-    [[ -n $wireproxy_port ]] && netflix_wireproxy=$(nf -proxy socks5://127.0.0.1:$wireproxy_port | sed -n 3p | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g")
+     # Simplify the Netflix detection script output results to facilitate the layout of the output results
+     [[ $netflix4 == "Your export IP fully unlocks Netflix and supports the viewing of non-homemade dramas" ]] && netflix4="${GREEN} has unlocked Netflix${PLAIN}"
+     [[ $netflix6 == "Your export IP fully unlocks Netflix and supports the viewing of non-homemade dramas" ]] && netflix6="${GREEN} has unlocked Netflix${PLAIN}"
+     [[ $netflix4 == "Your export IP can use Netflix, but can only watch Netflix's homemade dramas" ]] && netflix4="${YELLOW}NETFLIX's homemade dramas${PLAIN}"
+     [[ $netflix6 == "Your export IP can use Netflix, but can only watch Netflix's homemade dramas" ]] && netflix6="${YELLOW}NETFLIX's homemade dramas${PLAIN}"
+     [[ -z $netflix4 ]] || [[ $netflix4 == "Your network may not be properly configured for IPv4, or there may be no IPv4 network access" ]] && netflix4="${RED} cannot detect Netflix status ${PLAIN }"
+     [[ -z $netflix6 ]] || [[ $netflix6 == "Your network may not be properly configured for IPv6, or there may be no IPv6 network access" ]] && netflix6="${RED} cannot detect Netflix status ${PLAIN }"
+     [[ $netflix4 =~ "NETFLIX does not provide services in the country where your export IP is located"|"NETFLIX provides services in the country where your export IP is located, but your IP is suspected of being a proxy and the service cannot be used normally" ]] && netflix4 ="${RED}cannot unblock Netflix${PLAIN}"
+     [[ $netflix6 =~ "NETFLIX does not provide services in the country where your export IP is located"|"NETFLIX provides services in the country where your export IP is located, but your IP is suspected of being a proxy and the service cannot be used normally" ]] && netflix6 ="${RED}cannot unblock Netflix${PLAIN}"
+     [[ $netflix_cli == "Your export IP fully unlocks Netflix and supports the viewing of non-homemade dramas" ]] && netflix_cli="${GREEN} has unlocked Netflix${PLAIN}"
+     [[ $netflix_wireproxy == "Your export IP fully unlocks Netflix and supports the viewing of non-homemade dramas" ]] && netflix_wireproxy="${GREEN} has unlocked Netflix${PLAIN}"
+     [[ $netflix_cli == "Your export IP can use Netflix, but you can only watch Netflix's homemade dramas" ]] && netflix_cli="${YELLOW}NETFLIX's homemade dramas${PLAIN}"
+     [[ $netflix_wireproxy == "Your export IP can use Netflix, but you can only watch Netflix's homemade dramas" ]] && netflix_wireproxy="${YELLOW}NETFLIX's homemade dramas${PLAIN}"
+     [[ $netflix_cli =~ "NETFLIX does not provide services in the country where your export IP is located"|"NETFLIX provides services in the country where your export IP is located, but your IP is suspected of being a proxy and the service cannot be used normally" ]] && netflix_cli ="${RED}cannot unblock Netflix${PLAIN}"
+     [[ $netflix_wireproxy =~ "NETFLIX does not provide services in the country where your export IP is located"|"NETFLIX provides services in the country where your export IP is located, but your IP is suspected of being a proxy and the service cannot be used normally" ]] && netflix_wireproxy ="${RED}cannot unblock Netflix${PLAIN}"
 
-    # 简化 Netflix 检测脚本输出结果，以便输出结果的排版
-    [[ $netflix4 == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]] && netflix4="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $netflix6 == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]] && netflix6="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $netflix4 == "您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]] && netflix4="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ $netflix6 == "您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]] && netflix6="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ -z $netflix4 ]] || [[ $netflix4 == "您的网络可能没有正常配置IPv4，或者没有IPv4网络接入" ]] && netflix4="${RED}无法检测 Netflix 状态${PLAIN}"
-    [[ -z $netflix6 ]] || [[ $netflix6 == "您的网络可能没有正常配置IPv6，或者没有IPv6网络接入" ]] && netflix6="${RED}无法检测 Netflix 状态${PLAIN}"
-    [[ $netflix4 =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务" ]] && netflix4="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $netflix6 =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务" ]] && netflix6="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $netflix_cli == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]] && netflix_cli="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $netflix_wireproxy == "您的出口IP完整解锁Netflix，支持非自制剧的观看" ]] && netflix_wireproxy="${GREEN}已解锁 Netflix${PLAIN}"
-    [[ $netflix_cli == "您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]] && netflix_cli="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ $netflix_wireproxy == "您的出口IP可以使用Netflix，但仅可看Netflix自制剧" ]] && netflix_wireproxy="${YELLOW}Netflix 自制剧${PLAIN}"
-    [[ $netflix_cli =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务" ]] && netflix_cli="${RED}无法解锁 Netflix${PLAIN}"
-    [[ $netflix_wireproxy =~ "Netflix在您的出口IP所在的国家不提供服务"|"Netflix在您的出口IP所在的国家提供服务，但是您的IP疑似代理，无法正常使用服务" ]] && netflix_wireproxy="${RED}无法解锁 Netflix${PLAIN}"
-
-    # 测试 ChatGPT 解锁情况
-    curl -s4m8 https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt4="${RED}无法访问 ChatGPT${PLAIN}" || chatgpt4="${GREEN}支持访问 ChatGPT${PLAIN}"
-    curl -s6m8 https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt6="${RED}无法访问 ChatGPT${PLAIN}" || chatgpt6="${GREEN}支持访问 ChatGPT${PLAIN}"
-    if [[ -n $cli_port ]]; then
-        curl -sx socks5h://localhost:$cli_port https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt_cli="${RED}无法访问 ChatGPT${PLAIN}" || chatgpt_cli="${GREEN}支持访问 ChatGPT${PLAIN}"
-    fi
-    if [[ -n $wireproxy_port ]]; then
-        curl -sx socks5h://localhost:$wireproxy_port https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt_wireproxy="${RED}无法访问 ChatGPT${PLAIN}" || chatgpt_wireproxy="${GREEN}支持访问 ChatGPT${PLAIN}"
-    fi
+     # Test ChatGPT unlocking situation
+     curl -s4m8 https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt4="${RED} cannot access ChatGPT${PLAIN}" || chatgpt4="${GREEN} Support access to ChatGPT${PLAIN}"
+     curl -s6m8 https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt6="${RED} cannot access ChatGPT${PLAIN}" || chatgpt6="${GREEN} Support access to ChatGPT${PLAIN}"
+     if [[ -n $cli_port ]]; then
+         curl -sx socks5h://localhost:$cli_port https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt_cli="${RED} cannot access ChatGPT${PLAIN}" | | chatgpt_cli="${GREEN} supports access to ChatGPT${PLAIN}"
+     fi
+     if [[ -n $wireproxy_port ]]; then
+         curl -sx socks5h://localhost:$wireproxy_port https://chat.openai.com/ | grep -qw "Sorry, you have been blocked" && chatgpt_wireproxy="${RED} cannot access ChatGPT${PLAIN}" | | chatgpt_wireproxy="${GREEN} supports access to ChatGPT${PLAIN}"
+     fi
 }
 
 show_info() {
-    echo "----------------------------------------------------------------------------"
-    if [[ -n $ipv4 ]]; then
-        echo -e "IPv4 地址：$ipv4  地区：$country4  设备名称：$device4"
-        echo -e "提供商：$provider4  WARP 账户状态：$account4  剩余流量：$quota4"
-        echo -e "Netflix 状态：$netflix4  ChatGPT 状态：$chatgpt4"
-    else
-        echo -e "IPv4 出站状态：${RED}未启用${PLAIN}"
-    fi
-    echo "----------------------------------------------------------------------------"
-    if [[ -n $ipv6 ]]; then
-        echo -e "IPv6 地址：$ipv6  地区：$country6  设备名称：$device6"
-        echo -e "提供商：$provider6  WARP 账户状态：$account6  剩余流量：$quota6"
-        echo -e "Netflix 状态：$netflix6  ChatGPT 状态：$chatgpt6"
-    else
-        echo -e "IPv6 出站状态：${RED}未启用${PLAIN}"
-    fi
-    echo "----------------------------------------------------------------------------"
-    if [[ -n $cli_port ]]; then
-        echo -e "WARP-Cli代理端口: 127.0.0.1:$cli_port  状态: $account_cli  剩余流量：$quota_cli"
-        if [[ -n $ip_cli ]]; then
-            echo -e "IP: $ip_cli  地区: $country_cli  提供商：$provider_cli"
-            echo -e "Netflix 状态：$netflix_cli  ChatGPT 状态：$chatgpt_cli"
-        fi
-    else
-        echo -e "WARP-Cli 出站状态：${RED}未安装${PLAIN}"
-    fi
-    echo "----------------------------------------------------------------------------"
-    if [[ -n $wireproxy_port ]]; then
-        echo -e "WireProxy-WARP代理端口: 127.0.0.1:$wireproxy_port  状态: $account_wireproxy  剩余流量：$quota_wireproxy"
-        if [[ -n $ip_wireproxy ]]; then
-            echo -e "IP: $ip_wireproxy  地区: $country_wireproxy  提供商：$provider_wireproxy"
-            echo -e "Netflix 状态：$netflix_wireproxy  ChatGPT 状态：$chatgpt_wireproxy"
-        fi
-    else
-        echo -e "WireProxy 出站状态：${RED}未安装${PLAIN}"
-    fi
-    echo "----------------------------------------------------------------------------"
+     echo "------------------------------------------------ ----------------------------"
+     if [[ -n $ipv4 ]]; then
+         echo -e "IPv4 address: $ipv4 region: $country4 device name: $device4"
+         echo -e "Provider: $provider4 WARP account status: $account4 Remaining traffic: $quota4"
+         echo -e "Netflix status: $netflix4 ChatGPT status: $chatgpt4"
+     else
+         echo -e "IPv4 outbound status: ${RED} is not enabled ${PLAIN}"
+     fi
+     echo "------------------------------------------------ ----------------------------"
+     if [[ -n $ipv6 ]]; then
+         echo -e "IPv6 address: $ipv6 region: $country6 device name: $device6"
+         echo -e "Provider: $provider6 WARP account status: $account6 Remaining traffic: $quota6"
+         echo -e "Netflix status: $netflix6 ChatGPT status: $chatgpt6"
+     else
+         echo -e "IPv6 outbound status: ${RED} is not enabled ${PLAIN}"
+     fi
+     echo "------------------------------------------------ ----------------------------"
+     if [[ -n $cli_port ]]; then
+         echo -e "WARP-Cli proxy port: 127.0.0.1:$cli_port status: $account_cli remaining traffic: $quota_cli"
+         if [[ -n $ip_cli ]]; then
+             echo -e "IP: $ip_cli Region: $country_cli Provider: $provider_cli"
+             echo -e "Netflix status: $netflix_cli ChatGPT status: $chatgpt_cli"
+         fi
+     else
+         echo -e "WARP-Cli outbound status: ${RED} is not installed ${PLAIN}"
+     fi
+     echo "------------------------------------------------ ----------------------------"
+     if [[ -n $wireproxy_port ]]; then
+         echo -e "WireProxy-WARP proxy port: 127.0.0.1:$wireproxy_port status: $account_wireproxy remaining traffic: $quota_wireproxy"
+         if [[ -n $ip_wireproxy ]]; then
+             echo -e "IP: $ip_wireproxy Region: $country_wireproxy Provider: $provider_wireproxy"
+             echo -e "Netflix status: $netflix_wireproxy ChatGPT status: $chatgpt_wireproxy"
+         fi
+     else
+         echo -e "WireProxy outbound status: ${RED} is not installed ${PLAIN}"
+     fi
+     echo "------------------------------------------------ ----------------------------"
 }
 
 menu() {
-    clear
-    echo "#############################################################"
-    echo -e "#                ${RED}CloudFlare WARP 一键管理脚本${PLAIN}               #"
-    echo -e "# ${GREEN}作者${PLAIN}: MisakaNo の 小破站                                  #"
-    echo -e "# ${GREEN}博客${PLAIN}: https://blog.misaka.rest                            #"
-    echo -e "# ${GREEN}GitHub 项目${PLAIN}: https://github.com/Misaka-blog               #"
-    echo -e "# ${GREEN}GitLab 项目${PLAIN}: https://gitlab.com/Misaka-blog               #"
-    echo -e "# ${GREEN}Telegram 频道${PLAIN}: https://t.me/misakanocchannel              #"
-    echo -e "# ${GREEN}Telegram 群组${PLAIN}: https://t.me/misakanoc                     #"
-    echo -e "# ${GREEN}YouTube 频道${PLAIN}: https://www.youtube.com/@misaka-blog        #"
-    echo "#############################################################"
-    echo ""
-    echo -e " ${GREEN}1.${PLAIN} 安装 / 切换 WGCF-WARP          | ${GREEN}3.${PLAIN} 安装 / 切换 WARP-GO"
-    echo -e " ${GREEN}2.${PLAIN} ${RED}卸载 WGCF-WARP${PLAIN}                 | ${GREEN}4.${PLAIN} ${RED}卸载 WARP-GO${PLAIN}"
-    echo " -------------------------------------------------------------"
-    echo -e " ${GREEN}5.${PLAIN} 安装 WARP-Cli                  | ${GREEN}7.${PLAIN} 安装 WireProxy-WARP"
-    echo -e " ${GREEN}6.${PLAIN} ${RED}卸载 WARP-Cli${PLAIN}                  | ${GREEN}8.${PLAIN} ${RED}卸载 WireProxy-WARP${PLAIN}"
-    echo " -------------------------------------------------------------"
-    echo -e " ${GREEN}9.${PLAIN} 修改 WARP-Cli / WireProxy 端口 | ${GREEN}10.${PLAIN} 开启、关闭或重启 WARP"
-    echo -e " ${GREEN}11.${PLAIN} 提取 WireGuard 配置文件       | ${GREEN}12.${PLAIN} WARP+ 账户刷流量"
-    echo -e " ${GREEN}13.${PLAIN} 切换 WARP 账户类型            | ${GREEN}14.${PLAIN} 从 GitLab 拉取最新脚本"
-    echo " -------------------------------------------------------------"
-    echo -e " ${GREEN}0.${PLAIN} 退出脚本"
-    echo ""
-    show_info
-    echo ""
-    read -rp "请输入选项 [0-14]: " menu_input
-    case $menu_input in
-        1) select_wgcf ;;
-        2) uninstall_wgcf ;;
-        3) select_wpgo ;;
-        4) uninstall_wpgo ;;
-        5) install_warp_cli ;;
-        6) uninstall_warp_cli ;;
-        7) install_wireproxy ;;
-        8) uninstall_wireproxy ;;
-        9) change_warp_port ;;
-        10) switch_warp ;;
-        11) wireguard_profile ;;
-        12) warp_traffic ;;
-        13) warp_account ;;
-        14) wget -N https://gitlab.com/Misaka-blog/warp-script/-/raw/main/warp.sh && bash warp.sh ;;
-        *) exit 1 ;;
-    esac
+     clear
+     echo "############################################## #############"
+     echo -e "# ${RED}CloudFlare WARP one-click management script ${PLAIN} #"
+     echo -e "# ${GREEN}Author${PLAIN}: MisakaNo の小波站#"
+     echo -e "# ${GREEN}blog${PLAIN}: https://blog.misaka.rest #"
+     echo -e "# ${GREEN}GitHub project${PLAIN}: https://github.com/Misaka-blog #"
+     echo -e "# ${GREEN}GitLab project${PLAIN}: https://gitlab.com/Misaka-blog #"
+     echo -e "# ${GREEN}Telegram channel ${PLAIN}: https://t.me/misakanocchannel #"
+     echo -e "# ${GREEN}Telegram group ${PLAIN}: https://t.me/misakanoc #"
+     echo -e "# ${GREEN}YouTube Channel${PLAIN}: https://www.youtube.com/@misaka-blog #"
+     echo "############################################## #############"
+     echo ""
+     echo -e " ${GREEN}1.${PLAIN} install/switch WGCF-WARP | ${GREEN}3.${PLAIN} install/switch WARP-GO"
+     echo -e " ${GREEN}2.${PLAIN} ${RED}Uninstall WGCF-WARP${PLAIN} | ${GREEN}4.${PLAIN} ${RED}Uninstall WARP-GO${PLAIN}"
+     echo "------------------------------------------------ -------------"
+     echo -e " ${GREEN}5.${PLAIN} install WARP-Cli | ${GREEN}7.${PLAIN} install WireProxy-WARP"
+     echo -e " ${GREEN}6.${PLAIN} ${RED}Uninstall WARP-Cli${PLAIN} | ${GREEN}8.${PLAIN} ${RED}Uninstall WireProxy-WARP${PLAIN}"
+     echo "------------------------------------------------ -------------"
+     echo -e " ${GREEN}9.${PLAIN} Modify WARP-Cli / WireProxy port | ${GREEN}10.${PLAIN} Enable, disable or restart WARP"
+     echo -e " ${GREEN}11.${PLAIN} Extract WireGuard configuration file | ${GREEN}12.${PLAIN} WARP+ account brush traffic"
+     echo -e " ${GREEN}13.${PLAIN} Switch WARP account type | ${GREEN}14.${PLAIN} Pull the latest script from GitLab"
+     echo "------------------------------------------------ -------------"
+     echo -e "${GREEN}0.${PLAIN} exit script"
+     echo ""
+     show_info
+     echo ""
+     read -rp "Please enter options [0-14]: " menu_input
+     case $menu_input in
+         1) select_wgcf ;;
+         2) uninstall_wgcf ;;
+         3) select_wpgo ;;
+         4) uninstall_wpgo ;;
+         5) install_warp_cli ;;
+         6) uninstall_warp_cli ;;
+         7) install_wireproxy ;;
+         8) uninstall_wireproxy ;;
+         9) change_warp_port ;;
+         10) switch_warp ;;
+         11) wireguard_profile ;;
+         12) warp_traffic ;;
+         13) warp_account ;;
+         14) wget -N https://gitlab.com/Misaka-blog/warp-script/-/raw/main/warp.sh && bash warp.sh ;;
+         *) exit 1 ;;
+     esac
 }
 
 before_showinfo && menu
